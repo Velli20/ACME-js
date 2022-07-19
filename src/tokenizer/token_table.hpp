@@ -62,8 +62,11 @@ struct token_table
 
     static constexpr token_item table[] =
     {
+        { std::string_view{"="},                 match_not<'='>,            token_type::tok_assignment,                       token_flags::none    },
+        { std::string_view{"=>"},                match_not<'=', '>'>,       token_type::tok_arrow_function,                   token_flags::none    },
         { std::string_view{"=="},                match_not<'='>,            token_type::tok_equal,                            token_flags::none    },
         { std::string_view{"==="},               match_any,                 token_type::tok_strict_equal,                     token_flags::none    },
+
         { std::string_view{"!="},                match_not<'='>,            token_type::tok_not_equal,                        token_flags::none    },
         { std::string_view{"!=="},               match_any,                 token_type::tok_strict_not_equal,                 token_flags::none    },
         { std::string_view{">"},                 match_not<'=', '>'>,       token_type::tok_greater_than,                     token_flags::none    },
@@ -91,7 +94,6 @@ struct token_table
         { std::string_view{"??"},                match_any,                 token_type::tok_nullish_coalescing,               token_flags::none    },
         { std::string_view{";"},                 match_any,                 token_type::tok_semicolon,                        token_flags::none    },
         { std::string_view{","},                 match_any,                 token_type::tok_comma,                            token_flags::none    },
-        { std::string_view{"="},                 match_not<'='>,            token_type::tok_assignment,                       token_flags::none    },
         { std::string_view{"+="},                match_any,                 token_type::tok_assignment_plus,                  token_flags::none    },
         { std::string_view{"-="},                match_any,                 token_type::tok_assignment_minus,                 token_flags::none    },
         { std::string_view{"*="},                match_any,                 token_type::tok_assignment_multiply,              token_flags::none    },
@@ -125,12 +127,26 @@ struct token_table
         { std::string_view{"?."},                match_not<'='>,            token_type::tok_optional_chaining,                token_flags::none    },
         { std::string_view{"["},                 match_any,                 token_type::tok_opening_square_bracket,           token_flags::none    },
         { std::string_view{"]"},                 match_any,                 token_type::tok_closing_square_bracket,           token_flags::none    },
-        { std::string_view{"=>"},                match_not<'=', '>'>,       token_type::tok_arrow_function,                   token_flags::none    },
         { std::string_view{"..."},               match_any,                 token_type::tok_rest_parameters,                  token_flags::none    },
     };
 
     static constexpr auto to_string(token_type t) -> std::string_view
     {
+        if ( t == acme::token_type::tok_identifier )
+        {
+            return std::string_view{"identifier"};
+        }
+
+        if ( t == acme::token_type::tok_signed_number )
+        {
+            return std::string_view{"signed number"};
+        }
+
+        if ( t == acme::token_type::tok_unsigned_number )
+        {
+            return std::string_view{"unsigned number"};
+        }
+
         for ( const auto& item : keywords )
         {
             if ( item == t )

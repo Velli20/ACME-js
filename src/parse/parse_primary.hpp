@@ -172,13 +172,6 @@ constexpr auto parser::parse(state::postfix_expression, ast::UniqueAstNode left)
         auto inc_by = op_type == token_type::tok_increment ? 1 : -1;
         auto right  = ast::Literal::make(context(), ast::Integer{inc_by}, position());
 
-        // Expect and consume a semicolon token ';'.
-
-        if ( expect(token_type::tok_semicolon, false, true) == true )
-        {
-            //std::cout << "TODO: Unhandled semicolon\n";
-        }
-
         return ast::BinaryExpression::make(
             context(),
             std::move(left),
@@ -333,7 +326,7 @@ constexpr auto parser::parse(state::new_expression) -> ast::UniqueAstNode
     {
         // Parse arguments.
 
-        auto arguments = parse_comma_sequence(state::literal_expression{});
+        auto arguments = parse_comma_sequence(state::expression{});
 
         // Expect a closing parenthesis ')'.
 
@@ -343,13 +336,6 @@ constexpr auto parser::parse(state::new_expression) -> ast::UniqueAstNode
         }
 
         return ast::NewExpression::make(context(), position(), std::move(identifier), std::move(arguments));
-    }
-
-    // Expect a semicolon ';'.
-
-    if ( expect(token_type::tok_semicolon, true, true) == false )
-    {
-        return {};
     }
 
     return {};

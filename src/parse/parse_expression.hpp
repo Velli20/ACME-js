@@ -382,13 +382,6 @@ constexpr auto parser::parse(state::expression) -> ast::UniqueAstNode
     {
         auto right = transition(state::expression{});
 
-        // Expect a semicolon ';' after an assignment expression.
-
-        if ( expect(token_type::tok_semicolon, true, true) == false )
-        {
-            return {};
-        }
-
         return ast::BinaryExpression::make(context(), std::move(left), std::move(right), op_type.type(), position());
     }
 

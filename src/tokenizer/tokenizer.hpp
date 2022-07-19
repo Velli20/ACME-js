@@ -213,12 +213,6 @@ struct tokenizer
             {
                 return true;
             }
-
-            if ( acme::match_one_of<'-', '+'>(c1) && codepoint::is_decimal_digit(c2) )
-            {
-                return true;
-            }
-
             return false;
         }();
 

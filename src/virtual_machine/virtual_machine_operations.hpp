@@ -4,6 +4,11 @@ namespace acme {
 
 [[nodiscard]] constexpr auto op_negate(acme::script_value v) -> acme::script_value
 {
+    if ( v.type() == acme::number_type )
+    {
+        return acme::script_value { acme::number { to_double(v) * -1 } };
+    }
+
     return acme::script_value { acme::boolean { !to_boolean(v) } };
 }
 

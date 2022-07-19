@@ -264,6 +264,10 @@ static constexpr struct
                 context.emit_instruction(opcode::unary_delete);
                 break;
 
+            case token_type::tok_minus:
+                context.emit_instruction(opcode::unary_negate);
+                break;
+
             default:
                 break;
         }

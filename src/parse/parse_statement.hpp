@@ -61,7 +61,7 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
 {
     using namespace std::string_view_literals;
 
-    // Accepted lexical declarations.
+    // Get declaration type.
 
     /* static */ constexpr auto k_expected = std::array
     {
@@ -70,8 +70,6 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
         token_type::tok_let
     };
 
-    // Save lexical declaration type.
-
     const auto decl_type = current_token();
 
     if ( expect_one_of(k_expected, false, true) == false )
@@ -79,9 +77,9 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
         return {};
     }
 
-    // Lambda to parse variable identifier.
+    // Lambda to parse next variable declaration.
 
-    auto next_statement = [&]() -> ast::UniqueVariableDeclaration
+    auto next_variable_declaration = [&]() -> ast::UniqueVariableDeclaration
     {
         if ( auto id = transition(state::literal_expression{}); ast::instanceof<ast::Identifier>(id) )
         {
@@ -92,7 +90,7 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
         return {};
     };
 
-    // Create a variable statement list in case of a comma separated initializer/binding list.
+    // Create a variable statement list in case of a comma separated initializer list.
 
     auto statements = ast::AstNodeList::make(context(), position());
     assert(statements.get() != nullptr);
@@ -101,7 +99,7 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
     {
         // Get next statement.
 
-        auto var_statement = next_statement();
+        auto var_statement = next_variable_declaration();
         if ( var_statement.get() == nullptr )
         {
             break;
@@ -254,10 +252,9 @@ constexpr auto parser::parse(state::if_statement) -> ast::UniqueAstNode
         result.get()->condition(std::move(condition));
     }
 
-    // Parse consequent statement list:
-    //  '{' <Statement> '}'.
+    // Parse consequent block statement:
 
-    if ( auto consequent = transition(state::statement{}); consequent.get() != nullptr )
+    if ( auto consequent = transition(state::block_statement{}); consequent.get() != nullptr )
     {
         result.get()->consequent(std::move(consequent));
     }
@@ -266,7 +263,7 @@ constexpr auto parser::parse(state::if_statement) -> ast::UniqueAstNode
 
     if ( expect(token_type::tok_else, false, true) == true )
     {
-        // Parse alternative statement list:
+        // Parse alternative block statement:
         //  'else' '{' <Statement> '}'.
         //  'else' 'if' <Expression> '{' <Statement> '}'.
 
@@ -444,8 +441,6 @@ constexpr auto parser::parse(state::empty_statement) -> ast::UniqueAstNode
     return {};
 }
 
-// https://262.ecma-international.org/6.0/#sec-statements
-
 constexpr auto parser::parse(state::statement) -> ast::UniqueAstNode
 {
     // Special case to handle label statements.
@@ -460,8 +455,6 @@ constexpr auto parser::parse(state::statement) -> ast::UniqueAstNode
         case token_type::tok_opening_bracket:
             return transition(state::block_statement{});
 
-        case token_type::tok_semicolon:
-            return transition(state::empty_statement{});
 
         case token_type::tok_var:
         case token_type::tok_let:
@@ -508,7 +501,22 @@ constexpr auto parser::parse(state::statement) -> ast::UniqueAstNode
             return transition(state::with_statement{});
 
         default:
-            return transition(state::expression{});
+            break;
+    }
+
+    // Expression statement.
+
+    if ( auto exp = transition(state::expression{}); exp.get() != nullptr )
+    {
+        // Expect semicolon ';'.
+
+        if ( expect(token_type::tok_semicolon, true, true) == false )
+        {
+            assert(false);
+            return {};
+        }
+
+        return exp;
     }
 
     return {};

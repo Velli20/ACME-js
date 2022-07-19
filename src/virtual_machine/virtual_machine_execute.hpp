@@ -70,6 +70,10 @@ constexpr auto run_op(
             unary_op<opcode::unary_delete>(vm);
             break;
 
+        case opcode::unary_negate:
+            unary_op<opcode::unary_negate>(vm);
+            break;
+
         case opcode::load_var:
             var_op<opcode::load_var>(vm);
             break;
