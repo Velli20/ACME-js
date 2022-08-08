@@ -5,7 +5,7 @@
 #include "parser_context.hpp"
 
 #include "tokenizer/tokenizer.hpp"
-#include "ast/ast_node.hpp"
+#include "ast/ast.hpp"
 #include "parse.hpp"
 
 namespace acme {

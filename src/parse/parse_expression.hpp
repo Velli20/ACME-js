@@ -109,13 +109,13 @@ constexpr auto parser::parse(state::unary_expression) -> ast::UniqueAstNode
 
     if ( expect_one_of(k_expected, false, true) == true )
     {
-        if ( auto right = transition(state::primary_expression{}); right.get() != nullptr )
+        if ( auto right = transition(state::unary_expression{}); right.get() != nullptr )
         {
             return ast::UnaryExpression::make(context(), std::move(right), op_type.type(), position());
         }
     }
 
-    return transition(state::primary_expression{});
+    return transition(state::postfix_expression{});
 }
 
 // MultiplicativeExpression ::

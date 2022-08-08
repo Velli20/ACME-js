@@ -50,6 +50,10 @@ constexpr auto run_op(
             binary_op<opcode::compare_less_than>(vm);
             break;
 
+        case opcode::compare_greater_than:
+            binary_op<opcode::compare_greater_than>(vm);
+            break;
+
         case opcode::compare_instanceof:
             binary_op<opcode::compare_instanceof>(vm);
             break;

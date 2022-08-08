@@ -65,7 +65,7 @@ concept emit_visitor = requires(Func target_functor, emit_context& context)
         std::invoke(target_functor, list, context);
     };
 
-    requires requires(const ast::ObjectExpression& object_expression)
+    requires requires(const ast::ObjectLiteral& object_expression)
     {
         std::invoke(target_functor, object_expression, context);
     };
@@ -100,7 +100,7 @@ concept emit_visitor = requires(Func target_functor, emit_context& context)
         std::invoke(target_functor, ternary_expression, context);
     };
 
-    requires requires(const ast::ForLoopStatement& for_loop_statement)
+    requires requires(const ast::LoopStatement& for_loop_statement)
     {
         std::invoke(target_functor, for_loop_statement, context);
     };

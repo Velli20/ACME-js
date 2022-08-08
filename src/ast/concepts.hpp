@@ -74,7 +74,7 @@ concept ast_visitor = requires(Func target_functor, Args&&... args)
         std::invoke(target_functor, node_list, std::forward<decltype(args)>(args)...);
     };
 
-    requires requires(const ast::ObjectExpression& object_expression)
+    requires requires(const ast::ObjectLiteral& object_expression)
     {
         std::invoke(target_functor, object_expression, std::forward<decltype(args)>(args)...);
     };
@@ -109,7 +109,7 @@ concept ast_visitor = requires(Func target_functor, Args&&... args)
         std::invoke(target_functor, ternary_expression, std::forward<decltype(args)>(args)...);
     };
 
-    requires requires(const ast::ForLoopStatement& for_loop_statement)
+    requires requires(const ast::LoopStatement& for_loop_statement)
     {
         std::invoke(target_functor, for_loop_statement, std::forward<decltype(args)>(args)...);
     };

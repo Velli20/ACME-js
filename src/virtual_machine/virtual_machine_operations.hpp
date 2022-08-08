@@ -96,6 +96,8 @@ namespace acme {
 
     if ( lhs.type() == acme::string_type )
     {
+        // TODO: Ignore leading zeros.
+
         auto b1 = to_string(vm, lhs);
         auto b2 = to_string(vm, rhs);
 
@@ -114,6 +116,17 @@ namespace acme {
     auto n2 = to_double(rhs);
 
     return acme::script_value { acme::boolean { n1 < n2 } };
+}
+
+[[nodiscard]] constexpr auto op_greater_than(
+    acme::script_value lhs,
+    acme::script_value rhs
+) noexcept -> acme::script_value
+{
+    auto n1 = to_double(lhs);
+    auto n2 = to_double(rhs);
+
+    return acme::script_value { acme::boolean { n1 > n2 } };
 }
 
 [[nodiscard]] constexpr auto op_add(

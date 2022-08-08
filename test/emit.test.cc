@@ -58,11 +58,11 @@ TTS_CASE("Evaluate 1+1")
     static constexpr std::string_view k_script =
     R"(
         var i= 1 + 9;
-        var blaah= 110 + i;
+        var foo= 110 + i;
         i=20;
 
-        var n = i + blaah;
-        var s = i - blaah;
+        var n = i + foo;
+        var s = i - foo;
     )";
 
     do_test(k_script, context);
@@ -70,9 +70,9 @@ TTS_CASE("Evaluate 1+1")
     acme::virtual_machine vm{};
     vm.execute(context.bytecode());
 
-    std::cout << "i " << acme::to_double(vm.locals().get(acme::identifier{"i"sv}).value().get()) <<     '\n';
     TTS_EXPECT(vm.locals().get(acme::identifier{"i"sv}) == acme::script_value{20});
-    TTS_EXPECT(vm.locals().get(acme::identifier{"blaah"sv}) == acme::script_value{120});
+    std::cout << "i: " << vm.locals().get(acme::identifier{"foo"sv})->get().as<acme::number>().value() << '\n';
+    TTS_EXPECT(vm.locals().get(acme::identifier{"foo"sv}) == acme::script_value{120});
     TTS_EXPECT(vm.locals().get(acme::identifier{"n"sv}) == acme::script_value{140});
     TTS_EXPECT(vm.locals().get(acme::identifier{"s"sv}) == acme::script_value{-100});
 };
@@ -126,8 +126,6 @@ TTS_CASE("Evaluate assign")
     acme::virtual_machine vm{};
     vm.execute(context.bytecode());
 
-
-
     TTS_EXPECT(vm.locals().get(acme::identifier{"i"sv}) == acme::script_value{25});
     TTS_EXPECT(vm.locals().get(acme::identifier{"n"sv}) == acme::script_value{-25});
     TTS_EXPECT(vm.locals().get(acme::identifier{"s"sv}) == acme::script_value{(10 + 20 * 2 / 2)});
@@ -152,7 +150,12 @@ TTS_CASE("Evaluate comp")
 
     do_test(k_script, context);
 
-    acme::virtual_machine vm{};
+    std::byte buffer[1024];
+    acme::fixed_buffer_resource mbr{buffer, sizeof(buffer)};
+
+    // FIXME: String pool memory buffer.
+
+    acme::virtual_machine vm{std::addressof(mbr)};
     vm.execute(context.bytecode());
 
     TTS_EXPECT(vm.locals().get(acme::identifier{"s"sv}) == acme::script_value{acme::boolean{true}});
@@ -178,7 +181,12 @@ TTS_CASE("Evaluate comp2")
 
     do_test(k_script, context);
 
-    acme::virtual_machine vm{};
+    std::byte buffer[1024];
+    acme::fixed_buffer_resource mbr{buffer, sizeof(buffer)};
+
+    // FIXME: String pool memory buffer.
+
+    acme::virtual_machine vm{std::addressof(mbr)};
     vm.execute(context.bytecode());
 
     TTS_EXPECT(vm.locals().get(acme::identifier{"s"sv}) == acme::script_value{acme::boolean{true}});
@@ -206,8 +214,6 @@ TTS_CASE("Post inc")
 
     acme::virtual_machine vm{};
     vm.execute(context.bytecode());
-
-    std::cout << "i " << to_double(vm.locals().get(acme::identifier{"i"sv}).value().get()) <<     '\n';
 
     TTS_EXPECT(vm.locals().get(acme::identifier{"i"sv}) == acme::script_value{5});
 };
@@ -237,7 +243,6 @@ TTS_CASE("Unary")
     acme::virtual_machine vm{};
     vm.execute(context.bytecode());
 
-    std::cout << "i " << to_double(vm.locals().get(acme::identifier{"i"sv}).value().get()) <<     '\n';
 
     TTS_EXPECT(vm.locals().get(acme::identifier{"s"sv}) == acme::script_value{acme::string{"number"sv}});
     TTS_EXPECT(vm.locals().get(acme::identifier{"sb"sv}) == acme::script_value{acme::string{"boolean"sv}});
@@ -254,17 +259,28 @@ TTS_CASE("if else")
 
     static constexpr std::string_view k_script =
     R"(
-        var i= 3;
+        var i, n;
 
-        if ( i == 3)
+        if ( true )
         {
-            i ++;
+            i = 10;
         }
 
         else
         {
-            i = -1;
+            i = 40;
         }
+
+        if ( false )
+        {
+            n = undefined;
+        }
+
+        else
+        {
+            n = 20;
+        }
+
     )";
 
     do_test(k_script, context);
@@ -272,39 +288,8 @@ TTS_CASE("if else")
     acme::virtual_machine vm{};
     vm.execute(context.bytecode());
 
-    std::cout << "i " << to_double(vm.locals().get(acme::identifier{"i"sv}).value().get()) <<     '\n';
-    TTS_EXPECT(vm.locals().get(acme::identifier{"i"sv}) == acme::script_value{4});
-};
-
-TTS_CASE("if else not")
-{
-    using namespace acme::literals;
-    using namespace std::string_view_literals;
-
-    acme::emit_context context{};
-
-    static constexpr std::string_view k_script =
-    R"(
-        var i= 3;
-
-        if ( i == 4)
-        {
-            i ++;
-        }
-
-        else
-        {
-            i = -1;
-        }
-    )";
-
-    do_test(k_script, context);
-
-    acme::virtual_machine vm{};
-    vm.execute(context.bytecode());
-
-    std::cout << "i " << to_double(vm.locals().get(acme::identifier{"i"sv}).value().get()) <<     '\n';
-    TTS_EXPECT(vm.locals().get(acme::identifier{"i"sv}) == acme::script_value{-1});
+    TTS_EXPECT(vm.locals().get(acme::identifier{"i"sv}) == acme::script_value{10});
+    TTS_EXPECT(vm.locals().get(acme::identifier{"n"sv}) == acme::script_value{20});
 };
 
 TTS_CASE("if string")
@@ -331,11 +316,10 @@ TTS_CASE("if string")
     acme::virtual_machine vm{std::addressof(mbr)};
     vm.execute(context.bytecode());
 
-    std::cout << "s " << acme::to_string(vm, vm.locals().get(acme::identifier{"s"sv}).value().get()) <<     '\n';
     TTS_EXPECT(vm.locals().get(acme::identifier{"s"sv}) == acme::script_value{ acme::string {std::string_view{"hello2"}}});
 };
 
-TTS_CASE("loop")
+TTS_CASE("for loop")
 {
     using namespace acme::literals;
     using namespace std::string_view_literals;
@@ -344,11 +328,11 @@ TTS_CASE("loop")
 
     static constexpr std::string_view k_script =
     R"(
-        var blaa = 0;
+        var foo = 0;
 
         for ( var i = 0; i < 10; i++ )
         {
-            blaa += 2;
+            foo += (1+1);
         }
     )";
 
@@ -360,7 +344,63 @@ TTS_CASE("loop")
     acme::virtual_machine vm{std::addressof(mbr)};
     vm.execute(context.bytecode());
 
-    std::cout << "blaa " << to_double(vm.locals().get(acme::identifier{"blaa"sv}).value().get()) <<     '\n';
-    TTS_EXPECT(vm.locals().get(acme::identifier{"blaa"sv}) == acme::script_value{20});
+    TTS_EXPECT(vm.locals().get(acme::identifier{"foo"sv}) == acme::script_value{20});
+};
+
+TTS_CASE("while loop")
+{
+    using namespace acme::literals;
+    using namespace std::string_view_literals;
+
+    acme::emit_context context{};
+
+    static constexpr std::string_view k_script =
+    R"(
+        var foo = 0;
+        let i = 0;
+        while ( i < 10 )
+        {
+            foo += (1+1);
+            i++;
+        }
+    )";
+
+    do_test(k_script, context);
+
+    acme::virtual_machine vm{};
+    vm.execute(context.bytecode());
+
+    //std::cout << "foo: " << vm.locals().get(acme::identifier{"foo"sv})->get().as<acme::number>().value() << '\n';
+
+    TTS_EXPECT(vm.locals().get(acme::identifier{"foo"sv}) == acme::script_value{20});
+};
+
+TTS_CASE("ternary")
+{
+    using namespace acme::literals;
+    using namespace std::string_view_literals;
+
+    acme::emit_context context{};
+
+    static constexpr std::string_view k_script =
+    R"(
+        const foo = 120;
+
+        let x = foo > 140 ? "success" : "fail";
+        let n = foo < 140 ? "success" : "fail";
+    )";
+
+    do_test(k_script, context);
+
+    std::byte buffer[1024];
+    acme::fixed_buffer_resource mbr{buffer, sizeof(buffer)};
+
+    acme::virtual_machine vm{std::addressof(mbr)};
+    vm.execute(context.bytecode());
+
+    //std::cout << "i: " << vm.locals().get(acme::identifier{"x"sv})->get().as<acme::string>().value() << '\n';
+
+    TTS_EXPECT(vm.locals().get(acme::identifier{"n"sv}) == acme::script_value{ acme::string {std::string_view{"success"}}});
+    TTS_EXPECT(vm.locals().get(acme::identifier{"x"sv}) == acme::script_value{ acme::string {std::string_view{"fail"}}});
 };
 

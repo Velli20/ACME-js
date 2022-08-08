@@ -46,9 +46,9 @@ auto visit(concepts::ast_visitor auto callback, const UniqueAstNode& p)
         return std::invoke(callback, p.get()->deref<ast::UnaryExpression>());
     }
 
-    else if ( ast::instanceof<ast::ForLoopStatement>(p) )
+    else if ( ast::instanceof<ast::LoopStatement>(p) )
     {
-        return std::invoke(callback, p.get()->deref<ast::ForLoopStatement>());
+        return std::invoke(callback, p.get()->deref<ast::LoopStatement>());
     }
 
     else if ( ast::instanceof<ast::ThisExpression>(p) )
@@ -86,9 +86,9 @@ auto visit(concepts::ast_visitor auto callback, const UniqueAstNode& p)
         return std::invoke(callback, p.get()->deref<ast::TernaryExpression>());
     }
 
-    else if ( ast::instanceof<ast::ObjectExpression>(p) )
+    else if ( ast::instanceof<ast::ObjectLiteral>(p) )
     {
-        return std::invoke(callback, p.get()->deref<ast::ObjectExpression>());
+        return std::invoke(callback, p.get()->deref<ast::ObjectLiteral>());
     }
 
     else if ( ast::instanceof<ast::ObjectProperty>(p) )

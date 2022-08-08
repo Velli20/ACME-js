@@ -2,6 +2,13 @@
 
 namespace acme::ast {
 
+enum class loop_kind
+{
+    k_for_loop,
+    k_while_loop,
+    k_do_while_loop,
+};
+
 enum class node_type
 {
     literal_expression,
@@ -49,7 +56,7 @@ struct Identifier;
 struct ObjectProperty;
 struct ObjectPropertySetter;
 struct ObjectPropertyGetter;
-struct ObjectExpression;
+struct ObjectLiteral;
 struct CallExpression;
 struct NewExpression;
 struct ThisExpression;
@@ -65,8 +72,7 @@ struct LabelledStatement;
 struct ReturnStatement;
 struct BreakStatement;
 struct ContinueStatement;
-struct ForLoopStatement;
-struct FunctionDeclaration;
+struct LoopStatement;
 struct VariableDeclaration;
 struct AstNodeList;
 struct MetaProperty;
@@ -81,7 +87,7 @@ using UniqueIdentifier              = acme::unique_ptr<Identifier>;
 using UniqueObjectProperty          = acme::unique_ptr<ObjectProperty>;
 using UniqueObjectPropertySetter    = acme::unique_ptr<ObjectPropertySetter>;
 using UniqueObjectPropertyGetter    = acme::unique_ptr<ObjectPropertyGetter>;
-using UniqueObjectExpression        = acme::unique_ptr<ObjectExpression>;
+using UniqueObjectExpression        = acme::unique_ptr<ObjectLiteral>;
 using UniqueStatement               = acme::unique_ptr<Statement>;
 using UniqueExpression              = acme::unique_ptr<Expression>;
 using UniqueCallExpression          = acme::unique_ptr<CallExpression>;
@@ -99,13 +105,13 @@ using UniqueLabelledStatement       = acme::unique_ptr<LabelledStatement>;
 using UniqueReturnStatement         = acme::unique_ptr<ReturnStatement>;
 using UniqueBreakStatement          = acme::unique_ptr<BreakStatement>;
 using UniqueContinueStatement       = acme::unique_ptr<ContinueStatement>;
-using UniqueForLoopStatement        = acme::unique_ptr<ForLoopStatement>;
+using UniqueLoopStatement        = acme::unique_ptr<LoopStatement>;
 using UniqueVariableDeclaration     = acme::unique_ptr<VariableDeclaration>;
 using UniqueMetaProperty            = acme::unique_ptr<MetaProperty>;
 using UniqueArrayExpression         = acme::unique_ptr<ArrayLiteral>;
 using UniqueSequenceExpression      = acme::unique_ptr<SequenceExpression>;
 
-/* TODO: PropertySetParameterList */
+
 
 struct AstNode
 {
@@ -422,8 +428,8 @@ struct ObjectProperty : public Expression
     static constexpr auto rtti_type = rtti::type_index<ObjectProperty>();
 
     constexpr ObjectProperty(
-        UniqueAstNode key,
-        UniqueAstNode value,
+        UniqueAstNode  key,
+        UniqueAstNode  value,
         acme::position position
     )
         : Expression{std::move(position), rtti_type}
@@ -455,11 +461,11 @@ struct ObjectProperty : public Expression
     UniqueAstNode m_value{};
 };
 
-struct ObjectExpression : public Expression
+struct ObjectLiteral : public Expression
 {
-    static constexpr auto rtti_type = rtti::type_index<ObjectExpression>();
+    static constexpr auto rtti_type = rtti::type_index<ObjectLiteral>();
 
-    constexpr ObjectExpression(
+    constexpr ObjectLiteral(
         UniqueAstNode  properties,
         acme::position position
     )
@@ -473,7 +479,7 @@ struct ObjectExpression : public Expression
         acme::position        position
     ) -> UniqueObjectExpression
     {
-        return acme::make_unique<ObjectExpression>(context.resource(), std::move(properties), std::move(position));
+        return acme::make_unique<ObjectLiteral>(context.resource(), std::move(properties), std::move(position));
     }
 
     [[nodiscard]] constexpr auto properties() const noexcept -> const UniqueAstNode&
@@ -513,19 +519,23 @@ struct BlockStatement : public Statement
     UniqueAstNode m_statements{};
 };
 
-struct ForLoopStatement : public Statement
+struct LoopStatement : public Statement
 {
-    static constexpr auto rtti_type = rtti::type_index<ForLoopStatement>();
+    static constexpr auto rtti_type = rtti::type_index<LoopStatement>();
 
-    constexpr ForLoopStatement(acme::position position)
+    constexpr LoopStatement(acme::position position,
+                            loop_kind      kind)
         : Statement{std::move(position), rtti_type}
+        , m_kind{kind}
         {}
 
     [[nodiscard]] static constexpr auto make(
         acme::parser_context& context,
-        acme::position        position) -> UniqueForLoopStatement
+        acme::position        position,
+        loop_kind             kind
+    ) -> UniqueLoopStatement
     {
-        return acme::make_unique<ForLoopStatement>(context.resource(), std::move(position));
+        return acme::make_unique<LoopStatement>(context.resource(), std::move(position), kind);
     }
 
     [[nodiscard]] constexpr auto initializer() const noexcept -> const UniqueAstNode&
@@ -573,10 +583,16 @@ struct ForLoopStatement : public Statement
         m_body = std::move(u);
     }
 
+    [[nodiscard]] constexpr auto kind() const noexcept
+    {
+        return m_kind;
+    }
+
     UniqueAstNode m_initilizer{};
     UniqueAstNode m_condition{};
     UniqueAstNode m_update{};
     UniqueAstNode m_body{};
+    loop_kind     m_kind;
 };
 
 struct ReturnStatement : public Statement

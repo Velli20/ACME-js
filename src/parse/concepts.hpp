@@ -3,9 +3,9 @@
 namespace acme::concepts {
 
 template <typename T>
-concept parser = requires(T parser, acme::token_type token)
+concept parser = requires(const T parser, acme::token_type token)
 {
-    { parser.excpect(token, true, true) } -> std::same_as<bool>;
+    { parser.source_location() } -> std::same_as<position::checkpoint_type>;
 };
 
 

@@ -28,8 +28,8 @@ namespace acme::ast {
         case rtti::type_index<ObjectProperty>():
             return "ObjectProperty"sv;
 
-        case rtti::type_index<ObjectExpression>():
-            return "ObjectExpression"sv;
+        case rtti::type_index<ObjectLiteral>():
+            return "ObjectLiteral"sv;
 
         case rtti::type_index<ThisExpression>():
             return "ThisExpression"sv;
@@ -55,8 +55,20 @@ namespace acme::ast {
         case rtti::type_index<IfStatement>():
             return "IfStatement"sv;
 
-        case rtti::type_index<ForLoopStatement>():
-            return "ForLoopStatement"sv;
+        case rtti::type_index<LoopStatement>():
+        {
+            switch ( value.get()->deref<ast::LoopStatement>().kind() )
+            {
+                case loop_kind::k_for_loop:
+                    return "ForLoopStatement"sv;
+
+                case loop_kind::k_while_loop:
+                    return "WhileLoopStatement"sv;
+
+                case loop_kind::k_do_while_loop:
+                    return "WhileLoopStatement"sv;
+            }
+        }
 
         case rtti::type_index<VariableDeclaration>():
             return "VariableDeclaration"sv;

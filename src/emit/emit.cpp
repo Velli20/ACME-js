@@ -38,6 +38,8 @@ void emit(
     {
         eval::emit(p, context);
     }
+
+    context.emit_instruction(opcode::no_opearation);
 }
 
 } // namespace acme

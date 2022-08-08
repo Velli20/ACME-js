@@ -2,6 +2,7 @@
 
 #include "parse_fsm.hpp"
 #include "concepts.hpp"
+#include "parse_error.hpp"
 #include "parser_context.hpp"
 #include "parser.hpp"
 #include "parse_literal.hpp"

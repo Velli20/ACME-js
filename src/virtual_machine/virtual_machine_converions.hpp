@@ -118,57 +118,46 @@ namespace {
     using namespace std::string_view_literals;
 
     if ( is_nan(v) )
-        return acme::string{"NaN"sv};
-
-    constexpr auto k_max = std::numeric_limits<double>::digits + 2;
-
-    auto a = std::array<char, k_max + 1>{};
-    auto i = std::size_t{};
-    auto d = to_double(v);
-
-    auto do_append = [&](auto c)
     {
-        static_assert(
-            std::is_same_v<decltype(c), char>
-            , "");
+        return acme::string{"NaN"sv};
+    }
 
-        if constexpr ( std::is_same_v<decltype(c), char> )
-        {
-            a[i] = c;
-            i    = i +1;
-        }
-    };
+    const auto number_value = to_double(v);
 
-    if ( d == +0.0 || d == -0.0 )
+    if ( number_value == +0.0 || number_value == -0.0 )
     {
         return acme::string{"0"sv};
     }
 
-    if ( d == static_cast<double>(NAN) )
+    if ( number_value == static_cast<double>(NAN) )
     {
         return acme::string{"Infinity"sv};
     }
 
-    if ( d == static_cast<double>(INFINITY) )
+    if ( number_value == static_cast<double>(INFINITY) )
     {
         return acme::string{"Infinity"sv};
     }
 
-    if ( -d ==  static_cast<double>(INFINITY) )
+    if ( -number_value ==  static_cast<double>(INFINITY) )
     {
         return acme::string{"-Infinity"sv};
     }
 
-    if ( d < +0.0 )
+    constexpr auto k_max = std::numeric_limits<double>::digits + 2;
+
+    auto buffer = std::array<char, k_max + 1>{};
+
+    if ( auto len = snprintf(buffer.data(), buffer.size(), "%.1f", number_value); len > 0 && len < buffer.size() )
     {
-        do_append('-');
-        d = -d;
+        auto str_view = std::string_view{buffer.data(), static_cast<std::size_t>(len)};
+        auto new_str  = vm.string_pool().intern(str_view);
+
+        return acme::string{ new_str };
     }
 
-    auto str_view = std::string_view{a.data(), i};
-    auto new_str  = vm.string_pool().intern(str_view);
-
-    return acme::string{ new_str };
+    assert(false && "String buffer overflow");
+    return acme::string{""};
 }
 
 } // namespace

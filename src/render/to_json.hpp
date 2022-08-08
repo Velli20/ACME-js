@@ -288,13 +288,13 @@ static constexpr struct
         return result;
     }
 
-    auto operator()(const ast::ObjectExpression& v) -> nlohmann::json
+    auto operator()(const ast::ObjectLiteral& v) -> nlohmann::json
     {
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
 
-        result["type"sv] = "ObjectExpression"sv;
+        result["type"sv] = "ObjectLiteral"sv;
 
         if ( const auto& properties = v.properties(); properties.get() != nullptr )
         {
@@ -438,13 +438,13 @@ static constexpr struct
         return result;
     }
 
-    auto operator()(const ast::ForLoopStatement& v) -> nlohmann::json
+    auto operator()(const ast::LoopStatement& v) -> nlohmann::json
     {
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
 
-        result["type"sv] = "ForLoopStatement"sv;
+        result["type"sv] = "LoopStatement"sv;
 
         if ( const auto& initializer = v.initializer(); initializer.get() != nullptr )
         {

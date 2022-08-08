@@ -8,9 +8,25 @@ struct emit_context
     using number_constants_list_type = acme::dynamic_cvector<acme::number_constant>;
     using string_constants_list_type = acme::dynamic_cvector<acme::string_constant>;
 
-    constexpr auto count()
+    enum class emit_state : std::uint32_t
+    {
+        k_none = 0u,
+        k_variable_declaration,
+    };
+
+    [[nodiscard]] constexpr auto count() const
     {
         return m_bytecode.size() - 1;
+    }
+
+    [[nodiscard]] constexpr auto state() const
+    {
+        return m_state;
+    }
+
+    constexpr auto state(emit_state new_state)
+    {
+        m_state = new_state;
     }
 
     constexpr auto emit_instruction(
@@ -33,11 +49,15 @@ struct emit_context
         const auto numbers_index = m_numbers.size();
         const auto strings_index = m_strings.size();
 
+        // Signed integer constant.
+
         if constexpr ( std::is_same_v<T, ast::Integer> )
         {
             m_numbers.emplace_back(acme::number_constant { .m_i32 = constant.value() } );
             emit_instruction(opcode::constant_i32, numbers_index);
         }
+
+        // Unsigned integer constant.
 
         else if constexpr ( std::is_same_v<T, ast::UnsignedInteger> )
         {
@@ -45,16 +65,22 @@ struct emit_context
             emit_instruction(opcode::constant_u32, numbers_index);
         }
 
+        // Float constant.
+
         else if constexpr ( std::is_same_v<T, ast::Float> )
         {
             m_numbers.emplace_back(acme::number_constant { .m_float = static_cast<float>(constant.value()) } );
             emit_instruction(opcode::constant_double, numbers_index);
         }
 
+        // Boolean constant.
+
         else if constexpr ( std::is_same_v<T, ast::Boolean> )
         {
             emit_instruction(constant.value() ? opcode::push_bool_true : opcode::push_bool_false);
         }
+
+        // String constant.
 
         else if constexpr ( std::is_same_v<T, ast::String> )
         {
@@ -71,7 +97,7 @@ struct emit_context
                 }
             }
 
-            auto buffer_offset = m_string_buffer.length();
+            const auto buffer_offset = m_string_buffer.length();
 
             m_string_buffer.append(constant.value().view());
 
@@ -87,10 +113,14 @@ struct emit_context
             return m_strings.size() - 1;
         }
 
+        // Null constant.
+
         else if constexpr ( std::is_same_v<T, ast::Null> )
         {
             emit_instruction(opcode::push_null);
         }
+
+        // Variable ID constant.
 
         else if constexpr ( std::is_same_v<T, ast::Identifier> )
         {
@@ -111,7 +141,7 @@ struct emit_context
             std::span{m_numbers},
             std::span{m_strings},
             std::span{m_string_buffer.data(), m_string_buffer.length()},
-    };
+        };
     }
 
     private:
@@ -120,6 +150,7 @@ struct emit_context
     number_constants_list_type m_numbers{};
     string_constants_list_type m_strings{};
     std::string                m_string_buffer{};
+    emit_state                 m_state{};
 };
 
 } // namespace acme::eval

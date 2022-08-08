@@ -17,5 +17,8 @@ concept container_like = requires(T& c)
     c.size();
 };
 
+template <typename T>
+concept string_like = std::is_convertible_v<T, std::string_view> || std::is_convertible_v<T, platform::pmr::string>;
+
 } // namespace acme::concepts
 

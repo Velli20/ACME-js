@@ -1,11 +1,3 @@
-//-------------------------------------------------------------------
-//  ACME-JS
-//  https://github.com/velli20/ACME-JS
-//  Created:
-//  Copyright (C) 2022 velli20
-//-------------------------------------------------------------------
-
-
 #pragma once
 
 namespace acme {
@@ -54,7 +46,7 @@ constexpr auto parser::parse(state::block_statement) -> ast::UniqueAstNode
     return ast::BlockStatement::make(context(), std::move(list), position());
 }
 
-// VariableStatement ::
+// <VariableStatement> ::
 //  ('var' | 'const' | 'let') <Identifier> '=' <Expression> (';')
 
 constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
@@ -86,7 +78,7 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
             return ast::VariableDeclaration::make(context(), std::move(id), ast::DeclarationKind{decl_type.type()}, position());
         }
 
-        // TODO: std::cerr << "Expected an identifier\n"sv;
+        parser_syntax_error("Expected an identifier."sv);
         return {};
     };
 
@@ -154,8 +146,8 @@ constexpr auto parser::parse(state::variable_statement) -> ast::UniqueAstNode
     return statements;
 }
 
-
-// ForStatement
+// <ForStatement> ::
+//  'for' '(' <Expression> ';' <Expression> ';' <Expression> ';' ')'
 
 constexpr auto parser::parse(state::for_statement) -> ast::UniqueAstNode
 {
@@ -168,10 +160,12 @@ constexpr auto parser::parse(state::for_statement) -> ast::UniqueAstNode
         return {};
     }
 
-    auto loop_statement = ast::ForLoopStatement::make(context(), position());
+    // Create loop statement node.
+
+    auto loop_statement = ast::LoopStatement::make(context(), position(), ast::loop_kind::k_for_loop);
     if ( loop_statement.get() == nullptr )
     {
-        // TODO: std::cerr << "No mem Line: "sv << __LINE__ << '\n';
+        assert(false && "Out of memory");
         return {};
     }
 
@@ -200,7 +194,6 @@ constexpr auto parser::parse(state::for_statement) -> ast::UniqueAstNode
 
     if ( expect(token_type::tok_semicolon, true, true) == false )
     {
-        // TODO: std::cerr << "Line: "sv << __LINE__ << '\n';
         return {};
     }
 
@@ -215,7 +208,6 @@ constexpr auto parser::parse(state::for_statement) -> ast::UniqueAstNode
 
     if ( expect(token_type::tok_closing_parenthesis, true, true) == false )
     {
-        // TODO: std::cerr << "Line: "sv << __LINE__ << '\n';
         return {};
     }
 
@@ -229,6 +221,54 @@ constexpr auto parser::parse(state::for_statement) -> ast::UniqueAstNode
     return loop_statement;
 }
 
+// <WhileStatement> ::
+//  'while' '(' <Expression> ')'
+
+constexpr auto parser::parse(state::while_statement) -> ast::UniqueAstNode
+{
+    using namespace std::string_view_literals;
+
+    // Expect a 'while' keyword.
+
+    if ( expect(token_type::tok_while, false, true) == false )
+    {
+        return {};
+    }
+
+    // Parse while loop condition expression.
+
+    auto condition = parse_sequence(
+        /* entry_token */ token_type::tok_opening_parenthesis,
+        /* exit_token  */ token_type::tok_closing_parenthesis,
+        /* require     */ true,
+        /* args        */ state::expression{});
+
+    if ( condition.get() == nullptr )
+    {
+        parser_syntax_error("Expected '(' to start a while loop condition."sv);
+        return {};
+    }
+
+    // Create loop statement node.
+
+    auto loop_statement = ast::LoopStatement::make(context(), position(), ast::loop_kind::k_while_loop);
+    if ( loop_statement.get() == nullptr )
+    {
+        assert(false && "Out of memory");
+        return {};
+    }
+
+    loop_statement.get()->condition(std::move(condition));
+
+    // Loop body '{' ... '}'.
+
+    if ( auto body = transition(state::block_statement{}); body.get() != nullptr )
+    {
+        loop_statement.get()->body(std::move(body));
+    }
+
+    return loop_statement;
+}
 
 // <IfStatement> ::
 //     'if' <Expression> <Statement>
@@ -333,7 +373,7 @@ constexpr auto parser::parse(state::break_statement) -> ast::UniqueAstNode
 
         if ( ast::instanceof<ast::Identifier>(id) == false )
         {
-            // TODO: std::cerr << "Expected an identifier or ';'\n"sv;
+            parser_syntax_error("Expected an identifier or ';'"sv);
             return {};
         }
 
@@ -375,7 +415,7 @@ constexpr auto parser::parse(state::continue_statement) -> ast::UniqueAstNode
 
         if ( ast::instanceof<ast::Identifier>(id) == false )
         {
-            // TODO: std::cerr << "Expected an identifier or ';'\n"sv;
+            parser_syntax_error("Expected an identifier or ';'"sv);
             return {};
         }
 
@@ -393,7 +433,6 @@ constexpr auto parser::parse(state::continue_statement) -> ast::UniqueAstNode
 }
 
 constexpr auto parser::parse(state::do_statement)           -> ast::UniqueAstNode { return {}; }
-constexpr auto parser::parse(state::while_statement)        -> ast::UniqueAstNode { return {}; }
 constexpr auto parser::parse(state::function_statement)     -> ast::UniqueAstNode { return {}; }
 constexpr auto parser::parse(state::switch_statement)       -> ast::UniqueAstNode { return {}; }
 constexpr auto parser::parse(state::try_statement)          -> ast::UniqueAstNode { return {}; }

@@ -83,6 +83,13 @@ constexpr void binary_op(virtual_machine& vm)
             return op_less_than(left, right);
         }
 
+        // Binary '>' operator.
+
+        else if constexpr ( k_op == opcode::compare_greater_than )
+        {
+            return op_greater_than(left, right);
+        }
+
         // Binary 'instanceof' operator.
 
         else if constexpr ( k_op == opcode::compare_instanceof )

@@ -8,7 +8,6 @@ auto visit(
     emit_context&               context
 )
 {
-    // using return_type = typename std::invoke_result<decltype(callback), ast::Literal, decltype(context)>::type;
     using return_type = acme::script_value;
 
     if ( ast::instanceof<ast::Literal>(p) )
@@ -51,9 +50,9 @@ auto visit(
         return std::invoke(callback, p.get()->deref<ast::UnaryExpression>(), context);
     }
 
-    else if ( ast::instanceof<ast::ForLoopStatement>(p) )
+    else if ( ast::instanceof<ast::LoopStatement>(p) )
     {
-        return std::invoke(callback, p.get()->deref<ast::ForLoopStatement>(), context);
+        return std::invoke(callback, p.get()->deref<ast::LoopStatement>(), context);
     }
 
     else if ( ast::instanceof<ast::ThisExpression>(p) )
@@ -91,9 +90,9 @@ auto visit(
         return std::invoke(callback, p.get()->deref<ast::TernaryExpression>(), context);
     }
 
-    else if ( ast::instanceof<ast::ObjectExpression>(p) )
+    else if ( ast::instanceof<ast::ObjectLiteral>(p) )
     {
-        return std::invoke(callback, p.get()->deref<ast::ObjectExpression>(), context);
+        return std::invoke(callback, p.get()->deref<ast::ObjectLiteral>(), context);
     }
 
     else if ( ast::instanceof<ast::ObjectProperty>(p) )

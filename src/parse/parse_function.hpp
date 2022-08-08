@@ -16,7 +16,7 @@ constexpr auto parser::parse(state::function_declaration) -> ast::UniqueAstNode
     auto id = transition(state::literal_expression{});
     if ( ast::instanceof<ast::Identifier>(id) == false )
     {
-        std::cerr << "Function statements must have a name.\n";
+        parser_syntax_error("Function statements must have a name.");
         return {};
     }
 

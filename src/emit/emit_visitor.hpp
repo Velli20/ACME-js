@@ -11,6 +11,11 @@ static constexpr struct
     auto operator()(const ast::Identifier& v, emit_context& context) -> acme::script_value
     {
         context.emit(v);
+        if ( context.state() != emit_context::emit_state::k_variable_declaration )
+        {
+            context.emit_instruction(opcode::load_var);
+        }
+
         return {};
     }
 
@@ -73,7 +78,9 @@ static constexpr struct
     {
         if ( auto& id = v.identifier(); id.get() != nullptr  )
         {
+            context.state(emit_context::emit_state::k_variable_declaration);
             eval::emit(id, context);
+            context.state(emit_context::emit_state::k_none);
         }
 
         if ( auto& init = v.initializer(); init.get() != nullptr )
@@ -112,31 +119,13 @@ static constexpr struct
         if ( is_assignment_op == false )
         {
             eval::emit(v.right(), context);
-            if ( ast::instanceof<ast::Identifier>(v.right()) )
-            {
-                context.emit_instruction(opcode::load_var);
-            }
-
             eval::emit(v.left(), context);
-            if ( ast::instanceof<ast::Identifier>(v.left()) )
-            {
-                context.emit_instruction(opcode::load_var);
-            }
         }
 
         else
         {
             eval::emit(v.left(), context);
-            if ( ast::instanceof<ast::Identifier>(v.left()) )
-            {
-                context.emit_instruction(opcode::load_var);
-            }
-
             eval::emit(v.right(), context);
-            if ( ast::instanceof<ast::Identifier>(v.right()) )
-            {
-                context.emit_instruction(opcode::load_var);
-            }
         }
 
         switch ( v.operand() )
@@ -221,13 +210,14 @@ static constexpr struct
                 break;
 
             case token_type::tok_greater_than:
+                context.emit_instruction(opcode::compare_greater_than);
+                break;
+
             case token_type::tok_less_than:
                 context.emit_instruction(opcode::compare_less_than);
                 break;
 
             case token_type::tok_greater_than_or_equal:
-                break;
-
                 break;
 
             case token_type::tok_less_than_or_equal:
@@ -239,7 +229,10 @@ static constexpr struct
 
         if ( is_assignment_op )
         {
+            context.state(emit_context::emit_state::k_variable_declaration);
             eval::emit(v.left(), context);
+            context.state(emit_context::emit_state::k_none);
+
             context.emit_instruction(opcode::store_var);
         }
 
@@ -249,10 +242,6 @@ static constexpr struct
     auto operator()(const ast::UnaryExpression& v, emit_context& context) -> acme::script_value
     {
         eval::emit(v.expression(), context);
-        if ( ast::instanceof<ast::Identifier>(v.expression()) )
-        {
-            context.emit_instruction(opcode::load_var);
-        }
 
         switch ( v.operand() )
         {
@@ -271,7 +260,6 @@ static constexpr struct
             default:
                 break;
         }
-
 
         return {};
     }
@@ -308,7 +296,7 @@ static constexpr struct
         return {};
     }
 
-    auto operator()(const ast::ObjectExpression& v, emit_context& context) -> acme::script_value
+    auto operator()(const ast::ObjectLiteral& v, emit_context& context) -> acme::script_value
     {
         return {};
     }
@@ -335,71 +323,191 @@ static constexpr struct
 
     auto operator()(const ast::IfStatement& v, emit_context& context) -> acme::script_value
     {
-        if ( const auto& condition = v.condition(); condition.get() != nullptr )
-        {
-            eval::emit(condition, context);
-        }
+        // Get condition expression.
 
-        // Duplicate the result of the test condition for the alternate condition test.
+        const auto& condition = v.condition();
+        assert(condition.get() != nullptr);
 
-        context.emit_instruction(opcode::duplicate_top);
+        // Get 'true' branch.
+
+        const auto& consequent = v.consequent();
+        assert(consequent.get() != nullptr);
+
+        // Get 'false' branch.
+
+        const auto& alternate = v.alternate();
+
+        // Emit condition code.
+
+        eval::emit(condition, context);
 
         const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
 
-        if ( const auto& consequent = v.consequent(); consequent.get() != nullptr )
-        {
-            eval::emit(consequent, context);
-        }
+        // Emit 'true' condition branch.
+
+        eval::emit(consequent, context);
+
+        // Jump instruction to exit conditional code section if 'true' branch was executed.
+
+        const auto index_if_true = context.emit_instruction(opcode::jump_to);
+
+        // Patch jump target offset to skip 'true' branch code.
 
         immediate(context.at(index_if_false), context.count() + 1);
-        const auto index_if_true  = context.emit_instruction(opcode::jump_if_true);
 
-        if ( const auto& alternate = v.alternate(); alternate.get() != nullptr )
+        // Emit 'false' branch code.
+
+        if ( alternate.get() != nullptr )
         {
             eval::emit(alternate, context);
         }
 
-        context.emit_instruction(opcode::no_opearation);
-        immediate(context.at(index_if_true), context.count());
+        immediate(context.at(index_if_true), context.count() + 1);
 
         return {};
     }
 
     auto operator()(const ast::TernaryExpression& v, emit_context& context) -> acme::script_value
     {
-        return {};
-    }
+        // Get condition expression.
 
-    auto operator()(const ast::ForLoopStatement& v, emit_context& context) -> acme::script_value
-    {
-        if ( const auto& initializer = v.initializer(); initializer.get() != nullptr )
-        {
-            eval::emit(initializer, context);
-        }
+        const auto& condition = v.condition();
+        assert(condition.get() != nullptr);
 
-        auto test_condition = context.count() + 1;
-        if ( const auto& condition = v.condition(); condition.get() != nullptr )
-        {
-            eval::emit(condition, context);
-        }
+        // Get 'true' condition expression.
+
+        const auto& consequent = v.consequent();
+        assert(consequent.get() != nullptr);
+
+        // Get 'false' condition expression.
+
+        const auto& alternate = v.alternate();
+        assert(alternate.get() != nullptr);
+
+        // Emit condition expression.
+
+        eval::emit(condition, context);
+
+        // Jump target to skip 'true' branch code.
 
         const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
 
-        if ( const auto& update = v.update(); update.get() != nullptr )
+        // Emit 'true' condition expression.
+
+        eval::emit(consequent, context);
+
+        // Jump target to skip 'false' branch code.
+
+        const auto index_if_true = context.emit_instruction(opcode::jump_to);
+
+        // Patch jump target if condition failed.
+
+        immediate(context.at(index_if_false), context.count() + 1);
+
+        // Emit 'false' condition branch.
+
+        eval::emit(alternate, context);
+
+        // Patch 'true' condition end jump target.
+
+        immediate(context.at(index_if_true), context.count() + 1);
+
+        return {};
+    }
+
+    auto operator()(const ast::LoopStatement& v, emit_context& context) -> acme::script_value
+    {
+        // 'for' loop.
+
+        if ( v.kind() == ast::loop_kind::k_for_loop )
         {
-            eval::emit(update, context);
+            // Emit initializer expression.
+
+            if ( const auto& initializer = v.initializer(); initializer.get() != nullptr )
+            {
+                eval::emit(initializer, context);
+            }
+
+            // Emit loop test condition.
+
+            auto test_condition = [&]()
+            {
+                if ( const auto& condition = v.condition(); condition.get() != nullptr )
+                {
+                    auto position = context.count() + 1;
+                    eval::emit(condition, context);
+
+                    return position;
+                }
+
+                return context.emit_instruction(opcode::push_bool_true);
+            }();
+
+            // Jump over the update expression and loop body if test condition is false.
+
+            const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
+
+            // Emit update expression.
+
+            if ( const auto& update = v.update(); update.get() != nullptr )
+            {
+                eval::emit(update, context);
+            }
+
+            // Emit loop body code.
+
+            if ( const auto& body = v.body(); body.get() != nullptr )
+            {
+                eval::emit(body, context);
+            }
+
+            // Jump to test condition.
+
+            context.emit_instruction(opcode::jump_to, test_condition);
+
+            // Patch jump target if loop condition is false.
+
+            immediate(context.at(index_if_false), context.count() + 1);
         }
 
-        if ( const auto& body = v.body(); body.get() != nullptr )
+        // 'while' loop.
+
+        else if ( v.kind() == ast::loop_kind::k_while_loop )
         {
-            eval::emit(body, context);
+            // Emit loop test condition.
+
+            auto test_condition = [&]()
+            {
+                if ( const auto& condition = v.condition(); condition.get() != nullptr )
+                {
+                    auto position = context.count() + 1;
+                    eval::emit(condition, context);
+
+                    return position;
+                }
+
+                return context.emit_instruction(opcode::push_bool_true);
+            }();
+
+            // Jump over the loop body if test condition is false.
+
+            const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
+
+            // Emit loop body code.
+
+            if ( const auto& body = v.body(); body.get() != nullptr )
+            {
+                eval::emit(body, context);
+            }
+
+            // Jump to test condition.
+
+            context.emit_instruction(opcode::jump_to, test_condition);
+
+            // Patch jump target if loop condition is false.
+
+            immediate(context.at(index_if_false), context.count() + 1);
         }
-
-        auto repeat = context.emit_instruction(opcode::jump_to);
-        immediate(context.at(repeat), test_condition);
-
-        context.emit_instruction(opcode::no_opearation);
-        immediate(context.at(index_if_false), context.count());
 
         return {};
     }

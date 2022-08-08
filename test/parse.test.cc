@@ -116,30 +116,6 @@ TTS_CASE("Parse for loop")
     do_test(k_script);
 };
 
-TTS_CASE("Parse object")
-{
-    static constexpr std::string_view k_script =
-    R"(
-        var obj =
-        {
-            a: "foo", b: 42,
-            c:
-            {
-                h : 10, j:200,
-
-                set b(c)
-                {
-                    var a = 10;
-                },
-
-                get s() { a; }
-            }
-        };
-    )";
-
-    do_test(k_script);
-};
-
 TTS_CASE("Parse member expessions")
 {
     static constexpr std::string_view k_script =
@@ -201,7 +177,7 @@ TTS_CASE("Parse anonymous function")
 {
     static constexpr std::string_view k_script =
     R"(
-        function(width, height)
+        function funName(width, height)
         {
             var blaah = false;
             // expected output: 30
@@ -290,20 +266,41 @@ TTS_CASE("Parse labels")
     do_test(k_script);
 };
 
-TTS_CASE("Empty string literal")
+TTS_CASE("Parse object")
 {
     static constexpr std::string_view k_script =
     R"(
-
-                var n = 1;
-
-        for ( var i = 0; i < 10; i++ )
+        var obj =
         {
-            n *= 10;
-        }
+            a: "foo", b: 42,
+            c:
+            {
+                h : 10,
+                j:200,
+
+                set b(c)
+                {
+                    var a = 10;
+                },
+
+                get s() { a; }
+            }
+        };
     )";
 
     do_test(k_script);
 };
 
+
+TTS_CASE("Empty string literal")
+{
+    static constexpr std::string_view k_script =
+    R"(
+
+        var i = 10 * 2;
+        i += 2;
+    )";
+
+    do_test(k_script);
+};
 

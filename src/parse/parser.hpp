@@ -44,8 +44,8 @@ struct parser : public acme::tokenizer<char>
     constexpr auto parse(state::ternary_expression, ast::UniqueAstNode)           -> ast::UniqueAstNode;
     constexpr auto parse(state::primary_expression)                               -> ast::UniqueAstNode;
     constexpr auto parse(state::binary_expression)                                -> ast::UniqueAstNode;
-    constexpr auto parse(state::postfix_expression, ast::UniqueAstNode)           -> ast::UniqueAstNode;
-    constexpr auto parse(state::object_declaration)                               -> ast::UniqueAstNode;
+    constexpr auto parse(state::postfix_expression)                               -> ast::UniqueAstNode;
+    constexpr auto parse(state::object_literal)                                   -> ast::UniqueAstNode;
     constexpr auto parse(state::block_statement)                                  -> ast::UniqueAstNode;
     constexpr auto parse(state::variable_statement)                               -> ast::UniqueAstNode;
     constexpr auto parse(state::if_statement)                                     -> ast::UniqueAstNode;
@@ -66,8 +66,17 @@ struct parser : public acme::tokenizer<char>
     constexpr auto parse(state::empty_statement)                                  -> ast::UniqueAstNode;
     constexpr auto parse(state::statement)                                        -> ast::UniqueAstNode;
     constexpr auto parse(state::this_expression)                                  -> ast::UniqueAstNode;
-    constexpr auto parse(state::member_expression, ast::UniqueAstNode)            -> ast::UniqueAstNode;
+    constexpr auto parse(state::member_expression)                                -> ast::UniqueAstNode;
     constexpr auto parse(state::new_expression)                                   -> ast::UniqueAstNode;
+
+    template <typename... Args>
+    constexpr auto parser_syntax_error(
+        std::string_view format_message,
+        Args&&...        args
+    ) const noexcept
+    {
+        return syntax_error(*this, std::forward<decltype(format_message)>(format_message), std::forward<decltype(args)>(args)...);
+    }
 
     constexpr auto parse(...) -> ast::UniqueAstNode
     {
@@ -185,12 +194,15 @@ struct parser : public acme::tokenizer<char>
         bool             advance = false
     ) -> bool
     {
+        using namespace std::string_view_literals;
+
         if ( current_token() != t )
         {
             if ( std::is_constant_evaluated() == false && error_if_not == true )
             {
-                std::cerr << "SyntaxError: Expected '" << token_table::to_string(t) << "' instead got token '" << current_token().to_string() << "'.\n";
-                std::cerr << "At line: " << source_location().line() << " column: " << source_location().column() << '\n';
+                constexpr auto k_error_format = "SyntaxError: Expected '%s' instead got token '%s'."sv;
+
+                syntax_error(*this, k_error_format, token_table::to_string(t), current_token().to_string());
             }
 
             return false;

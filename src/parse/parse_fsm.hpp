@@ -41,7 +41,7 @@ enum class transition_state
     ternary_expression,
     member_expression,
     postfix_expression,
-    object_declaration,
+    object_literal,
 
     logical_expression,
     equality_expression,
@@ -92,7 +92,7 @@ using member_expression         = typename std::integral_constant<acme::transiti
 using this_expression           = typename std::integral_constant<acme::transition_state, acme::transition_state::this_expression>;
 using ternary_expression        = typename std::integral_constant<acme::transition_state, acme::transition_state::ternary_expression>;
 using postfix_expression        = typename std::integral_constant<acme::transition_state, acme::transition_state::postfix_expression>;
-using object_declaration        = typename std::integral_constant<acme::transition_state, acme::transition_state::object_declaration>;
+using object_literal        = typename std::integral_constant<acme::transition_state, acme::transition_state::object_literal>;
 
 
 using logical_expression        = typename std::integral_constant<acme::transition_state, acme::transition_state::logical_expression>;

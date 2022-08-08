@@ -18,7 +18,7 @@ constexpr auto parser::parse(state::parameter_list) -> ast::UniqueAstNode
         {
             if ( p.get() != nullptr && ast::instanceof<ast::Identifier>(p) == false )
             {
-                // TODO: std::cerr << "Expected a formal parameter\n"sv;
+                parser_syntax_error("Expected a formal parameter");
                 return {};
             }
         }
