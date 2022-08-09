@@ -9,6 +9,15 @@ enum class loop_kind
     k_do_while_loop,
 };
 
+enum class simple_statement_kind
+{
+    k_return_statement,
+    k_break_statement,
+    k_continue_statement,
+    k_debugger_statement,
+    k_label_statement,
+};
+
 enum class node_type
 {
     literal_expression,
@@ -68,11 +77,8 @@ struct UnaryExpression;
 struct FunctionExpression;
 struct FunctionDeclaration;
 struct IfStatement;
-struct LabelledStatement;
-struct ReturnStatement;
-struct BreakStatement;
-struct ContinueStatement;
 struct LoopStatement;
+struct SimpleStatement;
 struct VariableDeclaration;
 struct AstNodeList;
 struct MetaProperty;
@@ -101,11 +107,8 @@ using UniqueFunctionExpression      = acme::unique_ptr<FunctionExpression>;
 using UniqueFunctionDeclaration     = acme::unique_ptr<FunctionDeclaration>;
 using UniqueUnaryExpression         = acme::unique_ptr<UnaryExpression>;
 using UniqueIfStatement             = acme::unique_ptr<IfStatement>;
-using UniqueLabelledStatement       = acme::unique_ptr<LabelledStatement>;
-using UniqueReturnStatement         = acme::unique_ptr<ReturnStatement>;
-using UniqueBreakStatement          = acme::unique_ptr<BreakStatement>;
-using UniqueContinueStatement       = acme::unique_ptr<ContinueStatement>;
-using UniqueLoopStatement        = acme::unique_ptr<LoopStatement>;
+using UniqueSimpleStatement         = acme::unique_ptr<SimpleStatement>;
+using UniqueLoopStatement           = acme::unique_ptr<LoopStatement>;
 using UniqueVariableDeclaration     = acme::unique_ptr<VariableDeclaration>;
 using UniqueMetaProperty            = acme::unique_ptr<MetaProperty>;
 using UniqueArrayExpression         = acme::unique_ptr<ArrayLiteral>;
@@ -595,20 +598,25 @@ struct LoopStatement : public Statement
     loop_kind     m_kind;
 };
 
-struct ReturnStatement : public Statement
+struct SimpleStatement : public Statement
 {
-    static constexpr auto rtti_type = rtti::type_index<ReturnStatement>();
+    static constexpr auto rtti_type = rtti::type_index<SimpleStatement>();
 
-    constexpr ReturnStatement(acme::position position)
+    constexpr SimpleStatement(
+        acme::position        position,
+        simple_statement_kind kind
+    )
         : Statement{std::move(position), rtti_type}
+        , m_kind{kind}
         {}
 
     [[nodiscard]] static constexpr auto make(
         acme::parser_context& context,
-        acme::position        position
-    ) -> UniqueReturnStatement
+        acme::position        position,
+        simple_statement_kind kind
+    ) -> UniqueSimpleStatement
     {
-        return acme::make_unique<ReturnStatement>(context.resource(), std::move(position));
+        return acme::make_unique<SimpleStatement>(context.resource(), std::move(position), kind);
     }
 
     constexpr auto argument(UniqueAstNode node)
@@ -621,94 +629,13 @@ struct ReturnStatement : public Statement
         return m_argument;
     }
 
-    UniqueAstNode m_argument{};
-};
-
-struct LabelledStatement : public Statement
-{
-    static constexpr auto rtti_type = rtti::type_index<LabelledStatement>();
-
-    constexpr LabelledStatement(
-        UniqueAstNode  identifier,
-        acme::position position
-    )
-        : Statement{std::move(position), rtti_type}
-        , m_label_identifier{std::move(identifier)}
-        {}
-
-    [[nodiscard]] static constexpr auto make(
-        acme::parser_context& context,
-        UniqueAstNode         node,
-        acme::position        position
-    ) -> UniqueLabelledStatement
+    [[nodiscard]] constexpr auto kind() const noexcept
     {
-        return acme::make_unique<LabelledStatement>(context.resource(), std::move(node), std::move(position));
+        return m_kind;
     }
 
-    [[nodiscard]] constexpr auto label_identifier() const noexcept -> const UniqueAstNode&
-    {
-        return m_label_identifier;
-    }
-
-    UniqueAstNode m_label_identifier{};
-};
-
-struct BreakStatement : public Statement
-{
-    static constexpr auto rtti_type = rtti::type_index<BreakStatement>();
-
-    constexpr BreakStatement(acme::position position)
-        : Statement{std::move(position), rtti_type}
-        {}
-
-    [[nodiscard]] static constexpr auto make(
-        acme::parser_context& context,
-        acme::position        position
-    ) -> UniqueBreakStatement
-    {
-        return acme::make_unique<BreakStatement>(context.resource(), std::move(position));
-    }
-
-    constexpr auto label(UniqueAstNode node)
-    {
-        m_label = std::move(node);
-    }
-
-    [[nodiscard]] constexpr auto label() const noexcept -> const UniqueAstNode&
-    {
-        return m_label;
-    }
-
-    UniqueAstNode m_label{};
-};
-
-struct ContinueStatement : public Statement
-{
-    static constexpr auto rtti_type = rtti::type_index<ContinueStatement>();
-
-    constexpr ContinueStatement(acme::position position)
-        : Statement{std::move(position), rtti_type}
-        {}
-
-    [[nodiscard]] static constexpr auto make(
-        acme::parser_context& context,
-        acme::position        position
-    ) -> UniqueContinueStatement
-    {
-        return acme::make_unique<ContinueStatement>(context.resource(), std::move(position));
-    }
-
-    constexpr auto label(UniqueAstNode node)
-    {
-        m_label = std::move(node);
-    }
-
-    [[nodiscard]] constexpr auto label() const noexcept -> const UniqueAstNode&
-    {
-        return m_label;
-    }
-
-    UniqueAstNode m_label{};
+    UniqueAstNode         m_argument{};
+    simple_statement_kind m_kind;
 };
 
 struct IfStatement : public Statement

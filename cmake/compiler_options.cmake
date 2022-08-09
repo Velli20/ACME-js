@@ -32,6 +32,7 @@ macro(compiler_options TARGET)
                 -Wmost
                 -Wmove
                 -Wnewline-eof
+                -Wno-format-security
             >
 
             # MSVC

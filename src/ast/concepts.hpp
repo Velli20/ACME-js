@@ -114,24 +114,9 @@ concept ast_visitor = requires(Func target_functor, Args&&... args)
         std::invoke(target_functor, for_loop_statement, std::forward<decltype(args)>(args)...);
     };
 
-    requires requires(const ast::ReturnStatement& return_statement)
+    requires requires(const ast::SimpleStatement& simple_statement)
     {
-        std::invoke(target_functor, return_statement, std::forward<decltype(args)>(args)...);
-    };
-
-    requires requires(const ast::LabelledStatement& labelled_statement)
-    {
-        std::invoke(target_functor, labelled_statement, std::forward<decltype(args)>(args)...);
-    };
-
-    requires requires(const ast::BreakStatement& break_statement)
-    {
-        std::invoke(target_functor, break_statement, std::forward<decltype(args)>(args)...);
-    };
-
-    requires requires(const ast::ContinueStatement& continue_statement)
-    {
-        std::invoke(target_functor, continue_statement, std::forward<decltype(args)>(args)...);
+        std::invoke(target_functor, simple_statement, std::forward<decltype(args)>(args)...);
     };
 
     requires requires(const ast::CallExpression& call_expression)

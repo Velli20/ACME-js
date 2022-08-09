@@ -2,8 +2,53 @@
 
 namespace acme {
 
+struct emit_context;
+
+struct loop_context
+{
+    using offset_type = acme::instruction::immediate_type;
+
+    private:
+
+    constexpr auto increment_stack_frame_depth()
+    {
+        m_stack_frame_depth++;
+    }
+
+    constexpr auto decrement_stack_frame_depth()
+    {
+        m_stack_frame_depth--;
+    }
+
+    public:
+
+    [[nodiscard]] constexpr auto stack_frame_depth() const
+    {
+        return m_stack_frame_depth;
+    }
+
+    [[nodiscard]] constexpr auto condition_check_offset() const
+    {
+        return m_loop_condition_check_offset;
+    }
+
+    constexpr auto condition_check_offset(offset_type offset)
+    {
+        m_loop_condition_check_offset = offset;
+    }
+
+    friend struct emit_context;
+
+    offset_type m_loop_condition_check_offset{};
+    std::size_t m_stack_frame_depth{};
+};
+
 struct emit_context
 {
+    private:
+
+    public:
+
     using bytecode_list_type         = acme::dynamic_cvector<acme::instruction>;
     using number_constants_list_type = acme::dynamic_cvector<acme::number_constant>;
     using string_constants_list_type = acme::dynamic_cvector<acme::string_constant>;
@@ -34,6 +79,20 @@ struct emit_context
         acme::instruction::immediate_type imm = {}
     )
     {
+        // Keep track of how stack frames pushed during the current loop context.
+        // This is needed in case of statements that result jump condition to an arbitrary
+        // bytecode position. In that case we need to pop all of the stack frames pushed during the loop.
+
+        if ( operand == opcode::push_stack_frame && m_loop_context != nullptr )
+        {
+            m_loop_context->increment_stack_frame_depth();
+        }
+
+        else if ( operand == opcode::pop_stack_frame && m_loop_context != nullptr )
+        {
+            m_loop_context->decrement_stack_frame_depth();
+        }
+
         m_bytecode.push_back(instruction::make(operand, imm));
         return count();
     }
@@ -133,6 +192,21 @@ struct emit_context
         return m_numbers.size() - 1;
     }
 
+    [[nodiscard]] constexpr auto current_loop_context() const -> const loop_context*
+    {
+        return m_loop_context;
+    }
+
+    [[nodiscard]] constexpr auto current_loop_context() -> loop_context*
+    {
+        return m_loop_context;
+    }
+
+    [[nodiscard]] constexpr auto set_loop_context(loop_context* context)
+    {
+        m_loop_context = context;
+    }
+
     [[nodiscard]] constexpr auto bytecode() const -> acme::bytecode
     {
         return acme::bytecode
@@ -151,6 +225,7 @@ struct emit_context
     string_constants_list_type m_strings{};
     std::string                m_string_buffer{};
     emit_state                 m_state{};
+    loop_context*              m_loop_context{};
 };
 
 } // namespace acme::eval

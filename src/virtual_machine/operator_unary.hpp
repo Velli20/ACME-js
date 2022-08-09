@@ -8,7 +8,9 @@ void unary_op(virtual_machine& vm)
     auto right  = vm.stack().pop_back();
     auto result = [&]() -> acme::script_value
     {
-        if constexpr ( k_op == opcode::compare_not || k_op == opcode::unary_negate )
+        // Negate the value on top of the stack.
+
+        if constexpr ( k_op == opcode::unary_negate )
         {
             return op_negate(right);
         }

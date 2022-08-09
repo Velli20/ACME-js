@@ -26,11 +26,16 @@ namespace acme {
 
 auto to_json(const acme::parser::ast_node_list_type& ast_nodes) -> std::string
 {
+    using namespace std::string_view_literals;
+
     nlohmann::json result{};
 
     for ( const auto& p : ast_nodes )
     {
-        result += render::to_json(p);
+        auto sub      = render::to_json(p);
+        sub["type"sv] = ast::to_string(p);
+
+        result += sub;
     }
 
     return result.dump(2);

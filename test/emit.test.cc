@@ -370,7 +370,44 @@ TTS_CASE("while loop")
     acme::virtual_machine vm{};
     vm.execute(context.bytecode());
 
-    //std::cout << "foo: " << vm.locals().get(acme::identifier{"foo"sv})->get().as<acme::number>().value() << '\n';
+    std::cout << "foo: " << vm.locals().get(acme::identifier{"foo"sv})->get().as<acme::number>().value() << '\n';
+
+    TTS_EXPECT(vm.locals().get(acme::identifier{"foo"sv}) == acme::script_value{20});
+};
+
+TTS_CASE("Break statement")
+{
+    using namespace acme::literals;
+    using namespace std::string_view_literals;
+
+    acme::emit_context context{};
+
+    static constexpr std::string_view k_script =
+    R"(
+        var foo = 0;
+        while ( true )
+        {
+            let i = 0;
+
+            while ( i < 5 )
+            {
+                foo += (1+1);
+                i++;
+            }
+
+            if ( foo == 20 )
+            {
+                break;
+            }
+        }
+    )";
+
+    do_test(k_script, context);
+
+    acme::virtual_machine vm{};
+    vm.execute(context.bytecode());
+
+    std::cout << "foo: " << vm.locals().get(acme::identifier{"foo"sv})->get().as<acme::number>().value() << '\n';
 
     TTS_EXPECT(vm.locals().get(acme::identifier{"foo"sv}) == acme::script_value{20});
 };

@@ -31,7 +31,7 @@ struct stack : public std::array<T, N>
 
     constexpr auto push_back(const T& value)
     {
-        if ( not std::is_constant_evaluated() )
+        if ( std::is_constant_evaluated() == false )
         {
             assert(num_entries < N);
         }
@@ -43,7 +43,7 @@ struct stack : public std::array<T, N>
     template <typename V>
     constexpr auto push_back(V&& value)
     {
-        if ( not std::is_constant_evaluated() )
+        if ( std::is_constant_evaluated() == false )
         {
             assert(num_entries < N);
         }
@@ -63,9 +63,9 @@ struct stack : public std::array<T, N>
 
     constexpr auto pop_back()
     {
-        if ( not std::is_constant_evaluated() )
+        if ( std::is_constant_evaluated() == false )
         {
-            // assert(num_entries > decltype(num_entries){});
+            assert(num_entries > decltype(num_entries){});
         }
 
         --num_entries;

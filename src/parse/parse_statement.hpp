@@ -329,7 +329,7 @@ constexpr auto parser::parse(state::return_statement) -> ast::UniqueAstNode
         return {};
     }
 
-    auto result = ast::ReturnStatement::make(context(), position());
+    auto result = ast::SimpleStatement::make(context(), position(), ast::simple_statement_kind::k_return_statement);
 
     // Parse return value.
 
@@ -363,7 +363,7 @@ constexpr auto parser::parse(state::break_statement) -> ast::UniqueAstNode
         return {};
     }
 
-    auto result = ast::BreakStatement::make(context(), position());
+    auto result = ast::SimpleStatement::make(context(), position(), ast::simple_statement_kind::k_break_statement);
 
     // Optional jump label identifier.
 
@@ -377,7 +377,7 @@ constexpr auto parser::parse(state::break_statement) -> ast::UniqueAstNode
             return {};
         }
 
-        result.get()->label(std::move(id));
+        result.get()->argument(std::move(id));
     }
 
     // Expect a semicolon ';'.
@@ -405,7 +405,7 @@ constexpr auto parser::parse(state::continue_statement) -> ast::UniqueAstNode
         return {};
     }
 
-    auto result = ast::ContinueStatement::make(context(), position());
+    auto result = ast::SimpleStatement::make(context(), position(), ast::simple_statement_kind::k_continue_statement);
 
     // Optional jump label identifier.
 
@@ -419,7 +419,7 @@ constexpr auto parser::parse(state::continue_statement) -> ast::UniqueAstNode
             return {};
         }
 
-        result.get()->label(std::move(id));
+        result.get()->argument(std::move(id));
     }
 
     // Expect a semicolon ';'.
@@ -431,13 +431,6 @@ constexpr auto parser::parse(state::continue_statement) -> ast::UniqueAstNode
 
     return result;
 }
-
-constexpr auto parser::parse(state::do_statement)           -> ast::UniqueAstNode { return {}; }
-constexpr auto parser::parse(state::function_statement)     -> ast::UniqueAstNode { return {}; }
-constexpr auto parser::parse(state::switch_statement)       -> ast::UniqueAstNode { return {}; }
-constexpr auto parser::parse(state::try_statement)          -> ast::UniqueAstNode { return {}; }
-constexpr auto parser::parse(state::debugger_statement)     -> ast::UniqueAstNode { return {}; }
-constexpr auto parser::parse(state::with_statement)         -> ast::UniqueAstNode { return {}; }
 
 // <LabelledStatement> ::
 //    <LabelIdentifier> ':'
@@ -460,12 +453,24 @@ constexpr auto parser::parse(state::labelled_statement) -> ast::UniqueAstNode
     {
         if ( expect(token_type::tok_colon, false, true) == true )
         {
-            return ast::LabelledStatement::make(context(), std::move(id), position());
+            auto result = ast::SimpleStatement::make(context(), position(), ast::simple_statement_kind::k_label_statement);
+            assert(result.get() != nullptr && "Out of memory");
+
+            result.get()->argument(std::move(id));
+
+            return result;
         }
     }
 
     return {};
 }
+
+constexpr auto parser::parse(state::do_statement)           -> ast::UniqueAstNode { return {}; }
+constexpr auto parser::parse(state::function_statement)     -> ast::UniqueAstNode { return {}; }
+constexpr auto parser::parse(state::switch_statement)       -> ast::UniqueAstNode { return {}; }
+constexpr auto parser::parse(state::try_statement)          -> ast::UniqueAstNode { return {}; }
+constexpr auto parser::parse(state::debugger_statement)     -> ast::UniqueAstNode { return {}; }
+constexpr auto parser::parse(state::with_statement)         -> ast::UniqueAstNode { return {}; }
 
 // <EmptyStatement> ::
 //  ';'

@@ -56,24 +56,9 @@ auto visit(concepts::ast_visitor auto callback, const UniqueAstNode& p)
         return std::invoke(callback, p.get()->deref<ast::ThisExpression>());
     }
 
-    else if ( ast::instanceof<ast::ReturnStatement>(p) )
+    else if ( ast::instanceof<ast::SimpleStatement>(p) )
     {
-        return std::invoke(callback, p.get()->deref<ast::ReturnStatement>());
-    }
-
-    else if ( ast::instanceof<ast::BreakStatement>(p) )
-    {
-        return std::invoke(callback, p.get()->deref<ast::BreakStatement>());
-    }
-
-    else if ( ast::instanceof<ast::LabelledStatement>(p) )
-    {
-        return std::invoke(callback, p.get()->deref<ast::LabelledStatement>());
-    }
-
-    else if ( ast::instanceof<ast::ContinueStatement>(p) )
-    {
-        return std::invoke(callback, p.get()->deref<ast::ContinueStatement>());
+        return std::invoke(callback, p.get()->deref<ast::SimpleStatement>());
     }
 
     else if ( ast::instanceof<ast::MemberExpression>(p) )

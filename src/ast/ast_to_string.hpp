@@ -70,6 +70,27 @@ namespace acme::ast {
             }
         }
 
+        case rtti::type_index<SimpleStatement>():
+        {
+            switch ( value.get()->deref<ast::SimpleStatement>().kind() )
+            {
+                case simple_statement_kind::k_return_statement:
+                    return "ReturnStatement"sv;
+
+                case simple_statement_kind::k_break_statement:
+                    return "BreakStatement"sv;
+
+                case simple_statement_kind::k_continue_statement:
+                    return "ContinueStatement"sv;
+
+                case simple_statement_kind::k_debugger_statement:
+                    return "DebuggerStatement"sv;
+
+                case simple_statement_kind::k_label_statement:
+                    return "LabelledStatement"sv;
+            }
+        }
+
         case rtti::type_index<VariableDeclaration>():
             return "VariableDeclaration"sv;
 

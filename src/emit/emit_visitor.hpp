@@ -201,12 +201,12 @@ static constexpr struct
 
             case token_type::tok_not_equal:
                 context.emit_instruction(opcode::compare_equal);
-                context.emit_instruction(opcode::compare_not);
+                context.emit_instruction(opcode::unary_negate);
                 break;
 
             case token_type::tok_strict_not_equal:
                 context.emit_instruction(opcode::compare_strict_equal);
-                context.emit_instruction(opcode::compare_not);
+                context.emit_instruction(opcode::unary_negate);
                 break;
 
             case token_type::tok_greater_than:
@@ -218,9 +218,11 @@ static constexpr struct
                 break;
 
             case token_type::tok_greater_than_or_equal:
+                context.emit_instruction(opcode::compare_greater_than_or_equal);
                 break;
 
             case token_type::tok_less_than_or_equal:
+                context.emit_instruction(opcode::compare_less_than_or_equal);
                 break;
 
             default:
@@ -272,7 +274,7 @@ static constexpr struct
 
             eval::emit(body, context);
 
-            context.emit_instruction(opcode::pop_stack_frame);
+            context.emit_instruction(opcode::pop_stack_frame, 1);
         }
 
         return {};
@@ -417,118 +419,137 @@ static constexpr struct
 
     auto operator()(const ast::LoopStatement& v, emit_context& context) -> acme::script_value
     {
-        // 'for' loop.
+        loop_context loop{};
+
+        // Swap current loop context.
+
+        auto* previous_loop = context.current_loop_context();
+        context.set_loop_context(std::addressof(loop));
+
+        // Emit initializer expression if this is a 'for' loop.
 
         if ( v.kind() == ast::loop_kind::k_for_loop )
         {
-            // Emit initializer expression.
-
             if ( const auto& initializer = v.initializer(); initializer.get() != nullptr )
             {
                 eval::emit(initializer, context);
             }
+        }
 
-            // Emit loop test condition.
+        // Emit loop test condition.
 
-            auto test_condition = [&]()
+        auto test_condition = [&]()
+        {
+            if ( const auto& condition = v.condition(); condition.get() != nullptr )
             {
-                if ( const auto& condition = v.condition(); condition.get() != nullptr )
-                {
-                    auto position = context.count() + 1;
-                    eval::emit(condition, context);
+                auto position = context.count() + 1;
+                eval::emit(condition, context);
 
-                    return position;
-                }
+                return position;
+            }
 
-                return context.emit_instruction(opcode::push_bool_true);
-            }();
+            return context.emit_instruction(opcode::push_bool_true);
+        }();
 
-            // Jump over the update expression and loop body if test condition is false.
+        // Point where to jump in case of a 'break' or 'continue' statement.
 
-            const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
+        loop.condition_check_offset(context.count() + 1);
 
-            // Emit update expression.
+        // Jump over the update expression and loop body if test condition is false.
 
+        const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
+
+        // Emit update expression if this is a 'for' loop.
+
+        if ( v.kind() == ast::loop_kind::k_for_loop )
+        {
             if ( const auto& update = v.update(); update.get() != nullptr )
             {
                 eval::emit(update, context);
             }
-
-            // Emit loop body code.
-
-            if ( const auto& body = v.body(); body.get() != nullptr )
-            {
-                eval::emit(body, context);
-            }
-
-            // Jump to test condition.
-
-            context.emit_instruction(opcode::jump_to, test_condition);
-
-            // Patch jump target if loop condition is false.
-
-            immediate(context.at(index_if_false), context.count() + 1);
         }
 
-        // 'while' loop.
+        // Emit loop body code.
 
-        else if ( v.kind() == ast::loop_kind::k_while_loop )
+        if ( const auto& body = v.body(); body.get() != nullptr )
         {
-            // Emit loop test condition.
+            eval::emit(body, context);
+        }
 
-            auto test_condition = [&]()
+        // Jump to test condition.
+
+        context.emit_instruction(opcode::jump_to, test_condition);
+
+        // Patch jump target if loop condition is false.
+
+        immediate(context.at(index_if_false), context.count() + 1);
+
+        // Restore previous loop context.
+
+        context.set_loop_context(previous_loop);
+
+        return {};
+    }
+
+    auto operator()(const ast::SimpleStatement& v, emit_context& context) -> acme::script_value
+    {
+        switch ( v.kind() )
+        {
+            // Return statement.
+
+            case ast::simple_statement_kind::k_return_statement:
+                break;
+
+            // Break or Continue statement.
+
+            case ast::simple_statement_kind::k_break_statement:
+            case ast::simple_statement_kind::k_continue_statement:
             {
-                if ( const auto& condition = v.condition(); condition.get() != nullptr )
-                {
-                    auto position = context.count() + 1;
-                    eval::emit(condition, context);
+                const auto& argument = v.argument();
+                assert(argument.get() == nullptr);
 
-                    return position;
+                const auto* loop = context.current_loop_context();
+                assert(loop != nullptr);
+
+                if ( loop->stack_frame_depth() != 0 )
+                {
+                    context.emit_instruction(opcode::pop_stack_frame, loop->stack_frame_depth());
                 }
 
-                return context.emit_instruction(opcode::push_bool_true);
-            }();
+                // If this is a 'break' statement then push 'false' bool value on top the stack.
+                // In case on a 'continue' statement push 'true' value.
 
-            // Jump over the loop body if test condition is false.
+                const auto bool_const = [&]()
+                {
+                    if ( v.kind() == ast::simple_statement_kind::k_break_statement )
+                    {
+                        return opcode::push_bool_false;
+                    }
 
-            const auto index_if_false = context.emit_instruction(opcode::jump_if_false);
+                    return opcode::push_bool_true;
+                }();
 
-            // Emit loop body code.
+                context.emit_instruction(bool_const);
 
-            if ( const auto& body = v.body(); body.get() != nullptr )
-            {
-                eval::emit(body, context);
+                // Jump to the loop condition check offset. Instead executing the condition
+                // expression we have the bool value on top of the stack pushed in the previous step.
+
+                context.emit_instruction(opcode::jump_to, loop->condition_check_offset());
+
+                break;
             }
 
-            // Jump to test condition.
+            // Debugger statement.
 
-            context.emit_instruction(opcode::jump_to, test_condition);
+            case ast::simple_statement_kind::k_debugger_statement:
+                break;
 
-            // Patch jump target if loop condition is false.
+            // Labelled statement.
 
-            immediate(context.at(index_if_false), context.count() + 1);
+            case ast::simple_statement_kind::k_label_statement:
+                break;
         }
 
-        return {};
-    }
-
-    auto operator()(const ast::ReturnStatement& v, emit_context& context) -> acme::script_value
-    {
-        return {};
-    }
-
-    auto operator()(const ast::LabelledStatement& v, emit_context& context) -> acme::script_value
-    {
-        return {};
-    }
-
-    auto operator()(const ast::BreakStatement& v, emit_context& context) -> acme::script_value
-    {
-        return {};
-    }
-
-    auto operator()(const ast::ContinueStatement& v, emit_context& context) -> acme::script_value
-    {
         return {};
     }
 

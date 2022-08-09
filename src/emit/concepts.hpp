@@ -105,24 +105,9 @@ concept emit_visitor = requires(Func target_functor, emit_context& context)
         std::invoke(target_functor, for_loop_statement, context);
     };
 
-    requires requires(const ast::ReturnStatement& return_statement)
+    requires requires(const ast::SimpleStatement& simple_statement)
     {
-        std::invoke(target_functor, return_statement, context);
-    };
-
-    requires requires(const ast::LabelledStatement& labelled_statement)
-    {
-        std::invoke(target_functor, labelled_statement, context);
-    };
-
-    requires requires(const ast::BreakStatement& break_statement)
-    {
-        std::invoke(target_functor, break_statement, context);
-    };
-
-    requires requires(const ast::ContinueStatement& continue_statement)
-    {
-        std::invoke(target_functor, continue_statement, context);
+        std::invoke(target_functor, simple_statement, context);
     };
 
     requires requires(const ast::CallExpression& call_expression)

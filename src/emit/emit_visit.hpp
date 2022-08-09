@@ -60,24 +60,9 @@ auto visit(
         return std::invoke(callback, p.get()->deref<ast::ThisExpression>(), context);
     }
 
-    else if ( ast::instanceof<ast::ReturnStatement>(p) )
+    else if ( ast::instanceof<ast::SimpleStatement>(p) )
     {
-        return std::invoke(callback, p.get()->deref<ast::ReturnStatement>(), context);
-    }
-
-    else if ( ast::instanceof<ast::BreakStatement>(p) )
-    {
-        return std::invoke(callback, p.get()->deref<ast::BreakStatement>(), context);
-    }
-
-    else if ( ast::instanceof<ast::LabelledStatement>(p) )
-    {
-        return std::invoke(callback, p.get()->deref<ast::LabelledStatement>(), context);
-    }
-
-    else if ( ast::instanceof<ast::ContinueStatement>(p) )
-    {
-        return std::invoke(callback, p.get()->deref<ast::ContinueStatement>(), context);
+        return std::invoke(callback, p.get()->deref<ast::SimpleStatement>(), context);
     }
 
     else if ( ast::instanceof<ast::MemberExpression>(p) )

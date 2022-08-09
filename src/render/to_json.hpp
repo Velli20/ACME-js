@@ -16,8 +16,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "Identifier"sv;
-
         if ( auto res = v.value(); res.empty() == false )
         {
             result["name"sv] = std::move(res);
@@ -102,8 +100,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "ArrayLiteral"sv;
-
         if ( const auto& elements = lit.elements(); elements.get() != nullptr )
         {
             result["elements"sv] = render::to_json(elements);
@@ -117,8 +113,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "FunctionDeclaration"sv;
 
         if ( auto res = render::to_json(v.identifier()); res.empty() == false )
         {
@@ -144,8 +138,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "FunctionExpression"sv;
-
         if ( auto res = render::to_json(v.parameters()); res.empty() == false )
         {
             result["parameters"sv] = std::move(res);
@@ -164,8 +156,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "VariableDeclaration"sv;
 
         if ( auto res = operator()(v.kind()); res.empty() == false )
         {
@@ -191,8 +181,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "BinaryExpression"sv;
-
         if ( auto op = v.operand(); op != token_type::tok_none )
         {
             result["operand"sv] = token_table::to_string(op);
@@ -217,8 +205,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "UnaryExpression"sv;
-
         if ( auto op = v.operand(); op != token_type::tok_none )
         {
             result["operand"sv] = token_table::to_string(op);
@@ -238,8 +224,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "BlockStatement"sv;
-
         if ( const auto& body = v.body(); body.get() != nullptr )
         {
             result["body"sv] = render::to_json(body);
@@ -253,8 +237,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "MemberExpression"sv;
 
         if ( const auto& o = v.object(); o.get() != nullptr )
         {
@@ -275,8 +257,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "AstNodeList"sv;
-
         if ( const auto& list = v.nodes(); list.empty() == false )
         {
             for ( const auto& p : list )
@@ -294,8 +274,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "ObjectLiteral"sv;
-
         if ( const auto& properties = v.properties(); properties.get() != nullptr )
         {
             result["properties"sv] = render::to_json(properties);
@@ -309,8 +287,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "ObjectPropertySetter"sv;
 
         if ( const auto& formals = v.formals(); formals.get() != nullptr )
         {
@@ -331,8 +307,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "ObjectPropertyGetter"sv;
-
         if ( const auto& function_body = v.function_body(); function_body.get() != nullptr )
         {
             result["body"sv] = render::to_json(function_body);
@@ -346,8 +320,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "ObjectProperty"sv;
 
         auto property_type_string = [](const ast::UniqueAstNode& n)
         {
@@ -379,11 +351,7 @@ static constexpr struct
     {
         using namespace std::string_view_literals;
 
-        nlohmann::json result{};
-
-        result["type"sv] = "ThisExpression"sv;
-
-        return result;
+        return {};
     }
 
     auto operator()(const ast::IfStatement& v) -> nlohmann::json
@@ -391,8 +359,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "IfStatement"sv;
 
         if ( const auto& condition = v.condition(); condition.get() != nullptr )
         {
@@ -418,8 +384,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "TernaryExpression"sv;
-
         if ( const auto& condition = v.condition(); condition.get() != nullptr )
         {
             result["condition"sv] = render::to_json(condition);
@@ -444,8 +408,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "LoopStatement"sv;
-
         if ( const auto& initializer = v.initializer(); initializer.get() != nullptr )
         {
             result["initializers"sv] = render::to_json(initializer);
@@ -469,65 +431,15 @@ static constexpr struct
         return result;
     }
 
-    auto operator()(const ast::ReturnStatement& v) -> nlohmann::json
+    auto operator()(const ast::SimpleStatement& v) -> nlohmann::json
     {
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "ReturnStatement"sv;
 
         if ( const auto& argument = v.argument(); argument.get() != nullptr )
         {
             result["argument"sv] = render::to_json(argument);
-        }
-
-        return result;
-    }
-
-    auto operator()(const ast::LabelledStatement& v) -> nlohmann::json
-    {
-        using namespace std::string_view_literals;
-
-        nlohmann::json result{};
-
-        result["type"sv] = "LabelledStatement"sv;
-
-        if ( const auto& identifier = v.label_identifier(); identifier.get() != nullptr )
-        {
-            result["identifier"sv] = render::to_json(identifier);
-        }
-
-        return result;
-    }
-
-    auto operator()(const ast::BreakStatement& v) -> nlohmann::json
-    {
-        using namespace std::string_view_literals;
-
-        nlohmann::json result{};
-
-        result["type"sv] = "BreakStatement"sv;
-
-        if ( const auto& label = v.label(); label.get() != nullptr )
-        {
-            result["label"sv] = render::to_json(label);
-        }
-
-        return result;
-    }
-
-    auto operator()(const ast::ContinueStatement& v) -> nlohmann::json
-    {
-        using namespace std::string_view_literals;
-
-        nlohmann::json result{};
-
-        result["type"sv] = "ContinueStatement"sv;
-
-        if ( const auto& label = v.label(); label.get() != nullptr )
-        {
-            result["label"sv] = render::to_json(label);
         }
 
         return result;
@@ -538,8 +450,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "CallExpression"sv;
 
         if ( const auto& callee = v.callee(); callee.get() != nullptr )
         {
@@ -560,8 +470,6 @@ static constexpr struct
 
         nlohmann::json result{};
 
-        result["type"sv] = "NewExpression"sv;
-
         if ( const auto& callee = v.callee(); callee.get() != nullptr )
         {
             result["callee"sv] = render::to_json(callee);
@@ -580,8 +488,6 @@ static constexpr struct
         using namespace std::string_view_literals;
 
         nlohmann::json result{};
-
-        result["type"sv] = "MetaProperty"sv;
 
         if ( const auto type = v.type(); type == ast::MetaProperty::property_type::new_target )
         {
